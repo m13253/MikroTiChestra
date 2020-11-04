@@ -156,7 +156,7 @@ func (c *connection) Start() error {
 			fineTuning := (float64(RPN[1]) - 0x2000) / 8192
 			coarseTuning := float64(RPN[2]>>7) - 0x40
 
-			pitch := float64(event.Key) + float64(pitchWheel)/(pitchWheelRange) + fineTuning + coarseTuning
+			pitch := float64(event.Key) + float64(pitchWheel)*float64(pitchWheelRange)/8192 + fineTuning + coarseTuning
 			frequency := midiNoteToHertz(pitch)
 			var length time.Duration
 			if event.RelatedNoteOff != nil {
