@@ -63,6 +63,11 @@ func main() {
 	flag.StringVar(&app.conf.ConfigFile, "conf", "MikroTiChestra.conf", "Configure file path")
 	flag.Parse()
 	app.run()
+
+	fmt.Println()
+	fmt.Println("=================================")
+	fmt.Println("         MikroTiChestra")
+	fmt.Println("Copyright (c) 2020 Star Brilliant")
 }
 
 func (app *application) run() {

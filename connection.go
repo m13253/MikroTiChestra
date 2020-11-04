@@ -137,7 +137,7 @@ func (c *connection) Start() error {
 	currentRPN := uint16(0x0000)
 	currentData := uint16(0xffff)
 	RPN := [3]uint16{
-		0x00: 0x0200, // Pitch wheel range: (value>>7)+(value&0x7f)/100 semitones
+		0x00: 0x0100, // Pitch wheel range: (value>>7)+(value&0x7f)/100 semitones
 		0x01: 0x2000, // Fine tuning: (value-0x2000)/8192 semitones
 		0x02: 0x2000, // Coarse tuning: (value>>7)-0x40 semitones
 	}
