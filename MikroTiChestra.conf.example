@@ -1,0 +1,28 @@
+KnownHosts	$HOME/.ssh/known_hosts
+InitialDelay	1s
+
+# Router-1 will play Track 1 and 2
+# Seldomly MIDI files store notes into Track 0. If you meet one such file, you can also specify Track 0.
+# Note that the beeper is not polyphonic -- meaning only one note can sound at a time. That's why we need a bunch of routers!
+Connection	Router-1
+Track		1 2
+Host		192.168.88.1
+Port		22
+Username	admin
+Password	admin
+
+# Router-2 will play Track 3
+Connection	Router-2
+Track		3
+Host		192.168.88.2
+Port		22
+Username	admin
+Password	admin
+
+# Router-3 will play all other tracks
+Connection	Router-3
+Track		Other
+Host		192.168.88.3
+Port		22
+Username	admin
+Password	admin
