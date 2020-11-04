@@ -93,6 +93,7 @@ func (app *application) run() {
 		seq, err := app.loadMIDIFile(filename)
 		if err != nil {
 			fmt.Printf("%s: %v\n", filename, err)
+			os.Exit(1)
 		}
 		duration := app.determineSongDuration(seq)
 		app.songs = append(app.songs, song{seq, duration})
