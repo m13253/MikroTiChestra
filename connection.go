@@ -170,7 +170,7 @@ func (c *connection) Start() error {
 				continue
 			}
 			lengthMilli := int64((length + 999999*time.Nanosecond) / time.Millisecond)
-			_, err := fmt.Fprintf(stdin, ":beep frequency=%.0f length=%dms as-value;\n", frequency, lengthMilli)
+			_, err := fmt.Fprintf(stdin, ":beep as-value frequency=%.0f length=%dms;\n", frequency, lengthMilli)
 			if err != nil {
 				return err
 			}

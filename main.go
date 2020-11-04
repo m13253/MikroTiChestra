@@ -187,6 +187,7 @@ func (app *application) debugEventPrinter(ch <-chan debugEvent, wg *sync.WaitGro
 		colorMagenta := color.New(color.FgMagenta)
 		colorYellow := color.New(color.FgYellow)
 		for e := range ch {
+			color.Unset()
 			if e.Hostname != "" {
 				fmt.Print("[")
 				colorCyan.Print(e.Hostname)
@@ -195,16 +196,18 @@ func (app *application) debugEventPrinter(ch <-chan debugEvent, wg *sync.WaitGro
 			if e.RawLine != "" {
 				fmt.Println(e.RawLine)
 			} else {
+				fmt.Print("> ")
 				colorCyan.Print(":")
 				colorMagenta.Print("beep")
 				fmt.Print(" ")
+				colorGreen.Print("as-value")
+				fmt.Print(" ")
 				colorGreen.Print("frequency")
 				colorYellow.Print("=")
-				fmt.Printf("%.0f ", e.Frequency)
+				fmt.Printf("%-5.0f ", e.Frequency)
 				colorGreen.Print("length")
 				colorYellow.Print("=")
-				fmt.Printf("%dms ", e.LengthMilli)
-				colorGreen.Print("as-value")
+				fmt.Printf("%dms", e.LengthMilli)
 				colorYellow.Print(";")
 				fmt.Println()
 			}
