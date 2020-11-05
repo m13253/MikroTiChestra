@@ -152,12 +152,19 @@ func (c *connection) Start() error {
 
 		switch event := note.Event.(type) {
 		case *midimark.EventNoteOn:
-			pitchWheelRange := float64(RPN[0]>>7) + float64(RPN[0]&0x7f)/100
-			fineTuning := (float64(RPN[1]) - 0x2000) / 8192
-			coarseTuning := float64(RPN[2]>>7) - 0x40
+			var frequency float64
 
-			pitch := float64(event.Key) + float64(pitchWheel)*float64(pitchWheelRange)/8192 + fineTuning + coarseTuning
-			frequency := midiNoteToHertz(pitch)
+			if event.Channel != 10 {
+				pitchWheelRange := float64(RPN[0]>>7) + float64(RPN[0]&0x7f)/100
+				fineTuning := (float64(RPN[1]) - 0x2000) / 8192
+				coarseTuning := float64(RPN[2]>>7) - 0x40
+
+				pitch := float64(event.Key) + float64(pitchWheel)*float64(pitchWheelRange)/8192 + fineTuning + coarseTuning
+				frequency = midiNoteToHertz(pitch)
+			} else {
+				frequency = 20
+			}
+
 			var length time.Duration
 			if event.RelatedNoteOff != nil {
 				songAbsTickOff := event.RelatedNoteOff.AbsTick
@@ -169,7 +176,14 @@ func (c *connection) Start() error {
 			if length <= 0 {
 				continue
 			}
-			lengthMilli := int64((length + 999999*time.Nanosecond) / time.Millisecond)
+
+			var lengthMilli int64
+			if event.Channel != 10 {
+				lengthMilli = int64((length + 999999*time.Nanosecond) / time.Millisecond)
+			} else {
+				lengthMilli = 1
+			}
+
 			_, err := fmt.Fprintf(stdin, ":beep as-value frequency=%.0f length=%dms;\n", frequency, lengthMilli)
 			if err != nil {
 				return err
