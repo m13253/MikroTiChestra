@@ -45,12 +45,16 @@ type song struct {
 	Duration time.Duration
 }
 
-type debugEvent struct {
+type debugEventMessage struct {
+	Hostname   string
+	Message    string
+	OnFinished *sync.WaitGroup
+}
+
+type debugEventNote struct {
 	Hostname    string
-	RawLine     string
 	Frequency   float64
 	LengthMilli int64
-	OnFinished  *sync.WaitGroup
 }
 
 func main() {
@@ -111,29 +115,31 @@ func (app *application) run() {
 	startTimeChan := make(chan time.Time, len(app.conf.Connections))
 	var onFinished sync.WaitGroup
 	onFinished.Add(len(app.conf.Connections))
-	printDebugChan := make(chan debugEvent, 2*len(app.conf.Connections))
+	debugChanMessage := make(chan debugEventMessage, 2*len(app.conf.Connections))
+	debugChanNote := make(chan debugEventNote, 1024)
 	var onDebugPrinterFinished sync.WaitGroup
 	onDebugPrinterFinished.Add(1)
-	app.debugEventPrinter(printDebugChan, &onDebugPrinterFinished)
+	app.debugEventPrinter(debugChanMessage, debugChanNote, &onDebugPrinterFinished)
 
 	for _, connConf := range app.conf.Connections {
 		c := &connection{
-			AppConf:         &app.conf,
-			ConnConf:        connConf,
-			KnownHosts:      app.knownHosts,
-			Songs:           app.songs,
-			PrintDebugEvent: printDebugChan,
-			OnConnected:     &onConnected,
-			StartTime:       startTimeChan,
+			AppConf:          &app.conf,
+			ConnConf:         connConf,
+			KnownHosts:       app.knownHosts,
+			Songs:            app.songs,
+			DebugChanMessage: debugChanMessage,
+			DebugChanNote:    debugChanNote,
+			OnConnected:      &onConnected,
+			StartTime:        startTimeChan,
 		}
 		go func(c *connection, onFinished *sync.WaitGroup) {
 			defer onFinished.Done()
 			err := c.Start()
 			if err != nil {
 				var wg sync.WaitGroup
-				c.PrintDebugEvent <- debugEvent{
+				c.DebugChanMessage <- debugEventMessage{
 					Hostname:   c.ConnConf.Name,
-					RawLine:    err.Error(),
+					Message:    err.Error(),
 					OnFinished: &wg,
 				}
 				wg.Wait()
@@ -150,7 +156,7 @@ func (app *application) run() {
 	close(startTimeChan)
 
 	onFinished.Wait()
-	close(printDebugChan)
+	close(debugChanNote)
 	onDebugPrinterFinished.Wait()
 }
 
@@ -180,23 +186,38 @@ func (app *application) determineSongDuration(seq *midimark.Sequence) time.Durat
 	return maxDuration
 }
 
-func (app *application) debugEventPrinter(ch <-chan debugEvent, wg *sync.WaitGroup) {
-	go func(ch <-chan debugEvent, wg *sync.WaitGroup) {
+func (app *application) debugEventPrinter(chanMessage <-chan debugEventMessage, chanNote <-chan debugEventNote, wg *sync.WaitGroup) {
+	go func(chanMessage <-chan debugEventMessage, chanNote <-chan debugEventNote, wg *sync.WaitGroup) {
+		defer wg.Done()
 		colorGreen := color.New(color.FgGreen)
 		colorCyan := color.New(color.FgCyan)
 		colorMagenta := color.New(color.FgMagenta)
 		colorYellow := color.New(color.FgYellow)
-		for e := range ch {
-			color.Unset()
-			if e.Hostname != "" {
+
+		for {
+			select {
+			case msg, ok := <-chanMessage:
+				if !ok {
+					return
+				}
+				color.Unset()
+				if msg.Hostname != "" {
+					fmt.Print("[")
+					colorCyan.Print(msg.Hostname)
+					fmt.Print("] ")
+				}
+				fmt.Println(msg.Message)
+				if msg.OnFinished != nil {
+					msg.OnFinished.Done()
+				}
+			case note, ok := <-chanNote:
+				if !ok {
+					return
+				}
+				color.Unset()
 				fmt.Print("[")
-				colorCyan.Print(e.Hostname)
-				fmt.Print("] ")
-			}
-			if e.RawLine != "" {
-				fmt.Println(e.RawLine)
-			} else {
-				fmt.Print("> ")
+				colorCyan.Print(note.Hostname)
+				fmt.Print("] > ")
 				colorCyan.Print(":")
 				colorMagenta.Print("beep")
 				fmt.Print(" ")
@@ -204,17 +225,13 @@ func (app *application) debugEventPrinter(ch <-chan debugEvent, wg *sync.WaitGro
 				fmt.Print(" ")
 				colorGreen.Print("frequency")
 				colorYellow.Print("=")
-				fmt.Printf("%-5.0f ", e.Frequency)
+				fmt.Printf("%-5.0f ", note.Frequency)
 				colorGreen.Print("length")
 				colorYellow.Print("=")
-				fmt.Printf("%dms", e.LengthMilli)
+				fmt.Printf("%dms", note.LengthMilli)
 				colorYellow.Print(";")
 				fmt.Println()
 			}
-			if e.OnFinished != nil {
-				e.OnFinished.Done()
-			}
 		}
-		wg.Done()
-	}(ch, wg)
+	}(chanMessage, chanNote, wg)
 }

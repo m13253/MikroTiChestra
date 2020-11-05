@@ -42,9 +42,10 @@ type connection struct {
 	KnownHosts ssh.HostKeyCallback
 	Songs      []song
 
-	PrintDebugEvent chan<- debugEvent
-	OnConnected     *sync.WaitGroup
-	StartTime       <-chan time.Time
+	DebugChanMessage chan<- debugEventMessage
+	DebugChanNote    chan<- debugEventNote
+	OnConnected      *sync.WaitGroup
+	StartTime        <-chan time.Time
 }
 
 type note struct {
@@ -71,9 +72,9 @@ func (c *connection) Start() error {
 		BannerCallback: func(message string) error {
 			sc := bufio.NewScanner(strings.NewReader(message))
 			for sc.Scan() {
-				c.PrintDebugEvent <- debugEvent{
+				c.DebugChanMessage <- debugEventMessage{
 					Hostname: c.ConnConf.Name,
-					RawLine:  sc.Text(),
+					Message:  sc.Text(),
 				}
 			}
 			return nil
@@ -81,9 +82,9 @@ func (c *connection) Start() error {
 		Timeout: DefaultTimeout,
 	}
 
-	c.PrintDebugEvent <- debugEvent{
+	c.DebugChanMessage <- debugEventMessage{
 		Hostname: c.ConnConf.Name,
-		RawLine:  fmt.Sprintf("Connecting to %s", addr),
+		Message:  fmt.Sprintf("Connecting to %s", addr),
 	}
 
 	sshClient, err := ssh.Dial("tcp", addr, sshConf)
@@ -123,9 +124,9 @@ func (c *connection) Start() error {
 	defer sshSession.Wait()
 	defer stdin.Close()
 
-	c.PrintDebugEvent <- debugEvent{
+	c.DebugChanMessage <- debugEventMessage{
 		Hostname: c.ConnConf.Name,
-		RawLine:  fmt.Sprintf("Connected to %s", addr),
+		Message:  fmt.Sprintf("Connected to %s", addr),
 	}
 	c.OnConnected.Done()
 
@@ -189,10 +190,13 @@ func (c *connection) Start() error {
 			if err != nil {
 				return err
 			}
-			c.PrintDebugEvent <- debugEvent{
+			select {
+			case c.DebugChanNote <- debugEventNote{
 				Hostname:    c.ConnConf.Name,
 				Frequency:   frequency,
 				LengthMilli: lengthMilli,
+			}:
+			default:
 			}
 		case *midimark.EventPitchWheelChange:
 			pitchWheel[event.Channel-1] = event.Pitch
@@ -224,9 +228,9 @@ func (c *connection) Start() error {
 		}
 	}
 
-	c.PrintDebugEvent <- debugEvent{
+	c.DebugChanMessage <- debugEventMessage{
 		Hostname: c.ConnConf.Name,
-		RawLine:  "Closing connection",
+		Message:  "Closing connection",
 	}
 	return nil
 }
@@ -290,9 +294,9 @@ func (c *connection) pipeToStdout(wg *sync.WaitGroup) *io.PipeWriter {
 	go func(r *io.PipeReader, name string, wg *sync.WaitGroup) {
 		sc := bufio.NewScanner(r)
 		for sc.Scan() {
-			c.PrintDebugEvent <- debugEvent{
+			c.DebugChanMessage <- debugEventMessage{
 				Hostname: c.ConnConf.Name,
-				RawLine:  sc.Text(),
+				Message:  sc.Text(),
 			}
 		}
 		r.Close()
