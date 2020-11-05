@@ -24,7 +24,7 @@ import "math"
 
 // Notes are tuned using Equal Temperament.
 // MikroTik restricts the frequency in 20 Hz - 20,000 Hz.
-// Therefore, frequencies beyond this range are substituted using its harmonics.
+// Therefore, frequencies beyond this range are substituted using their harmonic series.
 func midiNoteToHertz(note float64) float64 {
 	freq := 440 * math.Pow(2, (note-69)/12)
 	if freq < 20 {
