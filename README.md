@@ -18,9 +18,11 @@ $ cp MikroTiChestra.conf{.example,}
 
 4. Create some MIDI files using your favorite DAW software
 
+5. Grab a wired connection to one or more MikroTik routers since Wi-Fi is unreliable
+
 5. SSH into your routers at least once to ensure `~/.ssh/known_hosts` contains public keys of your routers, this is for security
 
-6. Party on!
+7. Party on!
 ```
 $ ./MikroTiChestra super_mario_bros_overworld.mid never_gonna_give_you_up.mid
 ```
