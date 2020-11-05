@@ -141,7 +141,7 @@ func (c *connection) Start() error {
 		0x01: 0x2000, // Fine tuning: (value-0x2000)/8192 semitones
 		0x02: 0x2000, // Coarse tuning: (value>>7)-0x40 semitones
 	}
-	pitchWheel := int16(0)
+	pitchWheel := [16]int16{0}
 
 	for _, note := range notes {
 		songAbsTick := note.Event.Common().AbsTick
@@ -156,10 +156,11 @@ func (c *connection) Start() error {
 
 			if event.Channel != 10 {
 				pitchWheelRange := float64(RPN[0]>>7) + float64(RPN[0]&0x7f)/100
+				pitchWheelValue := float64(pitchWheel[event.Channel-1]) * float64(pitchWheelRange) / 8192
 				fineTuning := (float64(RPN[1]) - 0x2000) / 8192
 				coarseTuning := float64(RPN[2]>>7) - 0x40
 
-				pitch := float64(event.Key) + float64(pitchWheel)*float64(pitchWheelRange)/8192 + fineTuning + coarseTuning
+				pitch := float64(event.Key) + pitchWheelValue + fineTuning + coarseTuning
 				frequency = midiNoteToHertz(pitch)
 			} else {
 				frequency = 20
@@ -194,7 +195,7 @@ func (c *connection) Start() error {
 				LengthMilli: lengthMilli,
 			}
 		case *midimark.EventPitchWheelChange:
-			pitchWheel = event.Pitch
+			pitchWheel[event.Channel-1] = event.Pitch
 		case *midimark.EventControlChange:
 			switch event.Control {
 			case 0x06: // Data entry MSB
