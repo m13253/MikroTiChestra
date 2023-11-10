@@ -137,6 +137,7 @@ func (app *application) run() {
 			err := c.Start()
 			if err != nil {
 				var wg sync.WaitGroup
+				wg.Add(1)
 				c.DebugChanMessage <- debugEventMessage{
 					Hostname:   c.ConnConf.Name,
 					Message:    err.Error(),
