@@ -27,6 +27,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -79,25 +80,17 @@ func (conf *config) parseConfigFile() error {
 			}
 			return err
 		}
-		if strings.HasPrefix(line, "#") {
-			continue
-		}
-		fields := strings.Fields(line)
-		if len(fields) == 0 {
-			if lineerr == io.EOF {
-				break
-			}
-			continue
-		}
+		key, value := conf.splitKeyValue(line)
 		// I do not want to use reflect.Value, they are too ugly
-		switch fields[0] {
+		switch key {
+		case "":
 		case "KnownHosts":
-			err = conf.parseConfigString(fields, &conf.KnownHosts)
+			err = conf.parseConfigString(key, value, &conf.KnownHosts)
 			if err == nil {
 				conf.KnownHosts = os.ExpandEnv(conf.KnownHosts)
 			}
 		case "InitialDelay":
-			err = conf.parseConfigDuration(fields, &conf.InitialDelay)
+			err = conf.parseConfigDuration(key, value, &conf.InitialDelay)
 		case "Connection":
 			if currentConnValid {
 				err = conf.appendConnection(currentConn)
@@ -108,22 +101,22 @@ func (conf *config) parseConfigFile() error {
 			} else {
 				currentConnValid = true
 			}
-			err = conf.parseConfigString(fields, &currentConn.Name)
+			err = conf.parseConfigString(key, value, &currentConn.Name)
 		case "Track":
 			currentConnValid = true
-			err = conf.parseConfigTracks(fields, &currentConn.Tracks)
+			err = conf.parseConfigTracks(key, value, &currentConn.Tracks)
 		case "Host":
 			currentConnValid = true
-			err = conf.parseConfigString(fields, &currentConn.Host)
+			err = conf.parseConfigString(key, value, &currentConn.Host)
 		case "Port":
 			currentConnValid = true
-			err = conf.parseConfigString(fields, &currentConn.Port)
+			err = conf.parseConfigString(key, value, &currentConn.Port)
 		case "Username":
 			currentConnValid = true
-			err = conf.parseConfigString(fields, &currentConn.Username)
+			err = conf.parseConfigString(key, value, &currentConn.Username)
 		case "Password":
 			currentConnValid = true
-			err = conf.parseConfigString(fields, &currentConn.Password)
+			err = conf.parseConfigString(key, value, &currentConn.Password)
 		}
 		if err != nil {
 			return err
@@ -177,13 +170,22 @@ func (conf *config) appendConnection(currentConn *connConfig) error {
 	return nil
 }
 
-func (conf *config) parseConfigDuration(fields []string, dest *time.Duration) error {
-	if len(fields) != 2 {
-		return fmt.Errorf("syntax error in option %q", fields[0])
+var (
+	regexSplitKeyValue = regexp.MustCompile(`^\s*(?:#|(\S*)\s*(\S*(?:\s+\S+)*))`)
+)
+
+func (conf *config) splitKeyValue(line string) (key, value string) {
+	match := regexSplitKeyValue.FindStringSubmatch(line)
+	if match == nil {
+		return
 	}
-	duration, err := time.ParseDuration(fields[1])
+	return match[1], match[2]
+}
+
+func (conf *config) parseConfigDuration(key, value string, dest *time.Duration) error {
+	duration, err := time.ParseDuration(value)
 	if err != nil {
-		return err
+		return fmt.Errorf("syntax error in option %q: %v", key, err)
 	}
 	if duration < 0 {
 		return errors.New("duration is negative")
@@ -192,15 +194,15 @@ func (conf *config) parseConfigDuration(fields []string, dest *time.Duration) er
 	return nil
 }
 
-func (conf *config) parseConfigTracks(fields []string, dest *connTracksConfig) error {
-	for i := 1; i < len(fields); i++ {
-		if fields[i] == "Other" {
+func (conf *config) parseConfigTracks(key, value string, dest *connTracksConfig) error {
+	for _, i := range strings.Fields(value) {
+		if i == "Other" {
 			dest.OtherTracks = true
 			conf.OtherTracksDefined = true
 		} else {
-			value, err := strconv.ParseUint(fields[1], 0, 16)
+			value, err := strconv.ParseUint(i, 0, 16)
 			if err != nil {
-				return err
+				return fmt.Errorf("syntax error in option %q: %v", key, err)
 			}
 			trackID := uint16(value)
 			dest.Map[trackID] = struct{}{}
@@ -210,14 +212,7 @@ func (conf *config) parseConfigTracks(fields []string, dest *connTracksConfig) e
 	return nil
 }
 
-func (conf *config) parseConfigString(fields []string, dest *string) error {
-	if len(fields) > 2 {
-		return fmt.Errorf("space is not allowed in option %q", fields[0])
-	}
-	if len(fields) == 1 {
-		*dest = ""
-	} else {
-		*dest = fields[1]
-	}
+func (conf *config) parseConfigString(key, value string, dest *string) error {
+	*dest = value
 	return nil
 }
