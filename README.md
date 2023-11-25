@@ -1,28 +1,30 @@
 # MikroTiChestra
-There is a beeper in MikroTik routers… You know what I mean.
+There is a beeper in some MikroTik routers… You know what I mean.
 
 ## Usage
 
-1. Build the project using
+1. Grab a bunch of MikroTik routers [with a beeper](https://mikrotik.com/products/group/ethernet-routers?filter&s=c&f=%5B%22beeper%22%5D).
+
+2. Build the project using
 ```
 $ go get -u -v
 $ go build
 ```
 
-2. Copy the example configuration file
+3. Copy the example configuration file
 ```
 $ cp MikroTiChestra.conf{.example,}
 ```
 
-3. Edit the configuration file
+4. Edit the configuration file
 
-4. Create some MIDI files using your favorite DAW software
+5. Create some MIDI files using your favorite DAW software
 
-5. Grab a wired connection to one or more MikroTik routers since Wi-Fi is unreliable
+6. Grab a wired connection to one or more MikroTik routers since Wi-Fi is unreliable
 
-5. SSH into your routers at least once to ensure `~/.ssh/known_hosts` contains public keys of your routers, this is for security
+7. SSH into your routers at least once to ensure `~/.ssh/known_hosts` contains public keys of your routers, this is for security
 
-7. Party on!
+8. Party on!
 ```
 $ ./MikroTiChestra super_mario_bros_overworld.mid never_gonna_give_you_up.mid
 ```
