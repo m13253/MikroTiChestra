@@ -3,7 +3,7 @@ There is a beeper in some MikroTik routers… You know what I mean.
 
 ## Usage
 
-1. Grab a bunch of MikroTik routers [with a beeper](https://mikrotik.com/products/group/ethernet-routers?filter&s=c&f=%5B%22beeper%22%5D).
+1. Grab a bunch of MikroTik routers [with a beeper](https://mikrotik.com/products/group/ethernet-routers?filter&s=c&f=%5B%22beeper%22%5D)
 
 2. Build the project using
 ```
