@@ -12,15 +12,15 @@ YouTube video: <https://www.youtube.com/watch?v=r-g5rppwZXM>
    Ideally, you want to mix-and-match different models, as different chassis resonate differently, providing tonal variance between channels.
 
 2. Build the project using
-```
-$ go get -u -v
-$ go build
-```
+   ```bash
+   $ go get -u -v
+   $ go build
+   ```
 
 3. Copy the example configuration file
-```
-$ cp MikroTiChestra.conf{.example,}
-```
+   ```bash
+   $ cp MikroTiChestra.conf{.example,}
+   ```
 
 4. Edit the configuration file.
 
@@ -31,9 +31,9 @@ $ cp MikroTiChestra.conf{.example,}
 7. SSH into your routers at least once to ensure `~/.ssh/known_hosts` contains public keys of your routers, this is for security.
 
 8. Party on!
-```
-$ ./MikroTiChestra super_mario_bros_overworld.mid never_gonna_give_you_up.mid
-```
+   ```bash
+   $ ./MikroTiChestra super_mario_bros_overworld.mid never_gonna_give_you_up.mid
+   ```
 
 ## License
 
